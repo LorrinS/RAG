@@ -1,0 +1,216 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* Styling for buttons and input */
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .start-button {
+            background-color: #4CAF50; /* Green for start */
+            color: white;
+        }
+
+        .stop-button {
+            background-color: red; /* Red for stop */
+            color: white;
+        }
+
+        .info-button {
+            background-color: #008CBA; /* Blue for info */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box"></div>
+        <form action="{{ url_for('chat_route') }}" method="POST" id="chat-form"> 
+        <!-- <label for="message">Enter your message:</label> -->
+            <input type="text" id="user-input" name="user-input" autocomplete="off" placeholder="Type your question...">
+            <button id="send-btn" type="submit" class="button">Send</button>
+        </form>
+        <!-- Push-to-talk button that changes text and style -->
+        <button id="talkButton" class="button start-button" onclick="toggleListening()">Click to Start Recording</button>
+        <!-- Read aloud button -->
+        <button id="readAloudButton" class="button info-button" onclick="toggleReadAloud()">Read Aloud</button> 
+    </div>
+
+    <script>
+        // JavaScript functions for speech-to-text, file upload, and read aloud
+
+        let isRecording = false;
+        let transcriptionsList = [];  // Store completed transcriptions
+        let recognition = null;
+        const userInputField = document.getElementById('user-input');
+        let speechSynthesisUtterance = null;
+
+        // Toggle speech-to-text on button click
+        function toggleListening() {
+            if (isRecording) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+
+        // Start speech-to-text listening
+        function startListening() {
+            isRecording = true;
+            document.getElementById('talkButton').innerText = 'Click to Stop Recording';
+            document.getElementById('talkButton').classList.remove('start-button');
+            document.getElementById('talkButton').classList.add('stop-button');
+            
+            if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+
+                recognition.onresult = (event) => {
+                    let interimTranscript = '';  // Store interim results temporarily
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        if (event.results[i].isFinal) {
+                            // Add final result to the transcriptions list
+                            transcriptionsList.push(event.results[i][0].transcript);
+                            updateInputField();
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                };
+
+                recognition.onend = () => {
+                    // The recognition has finished, append the transcription and update input field
+                    updateInputField();
+                };
+
+                recognition.start();
+            }
+        }
+
+        // Stop speech-to-text listening
+        function stopListening() {
+            isRecording = false;
+            document.getElementById('talkButton').innerText = 'Click to Start Recording';
+            document.getElementById('talkButton').classList.remove('stop-button');
+            document.getElementById('talkButton').classList.add('start-button');
+
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+
+         // Update the input field by iterating over the transcriptions list
+         function updateInputField() {
+            userInputField.value = transcriptionsList.join(' ');  // Join transcriptions with space
+            adjustInputHeight(); // Adjust height after updating the input field
+        }
+
+        // Adjust textarea height based on input content
+        function adjustInputHeight() {
+            userInputField.style.height = 'auto'; // Reset height to auto
+            userInputField.style.height = userInputField.scrollHeight + 'px'; // Set height based on scrollHeight
+        }
+
+        // Function to disable the send button
+        function disableSendButton() {
+            document.getElementById("send-btn").disabled = true;
+            document.getElementById("send-btn").innerHTML = "Sending...";
+        }
+
+        // Function to enable the send button
+        function enableSendButton() {
+            document.getElementById("send-btn").disabled = false;
+            document.getElementById("send-btn").innerHTML = "Send";
+        }
+        // Send the final question when the "Send" button is clicked
+        document.getElementById("chat-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            disableSendButton;  // Disable the Send button temporarily
+
+            let query = userInputField.value.trim();
+            if (!query) return;
+
+            // Display user's question
+            let chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += ` 
+                <div class="user-message">
+                    <span class="question-label">User:</span>
+                    <span class="question-text">${query}</span>
+                </div>
+            `;
+
+            // Send the request to Flask backend
+            let response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: query })
+            });
+
+            let data = await response.json();
+
+            // Display AI's response
+            chatBox.innerHTML += `
+                <div class="bot-message">
+                    <span class="answer-label">Bot:</span>
+                    <span class="answer-text">${data.answer}</span>
+                </div>
+            `;
+
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+            userInputField.value = "";  // Clear input field after sending
+
+            // Re-enable Send button and reset transcriptions
+            enableSendButton;
+            transcriptionsList = [];
+        });
+        
+        // Read aloud the most recent answer
+        function toggleReadAloud() {
+            let answer = document.querySelector('.bot-message .answer-text');
+    
+            if (answer) {
+                if (speechSynthesis.speaking) {
+                    stopReadAloud(); // Stop if already speaking
+                } else {
+            // Create a new SpeechSynthesisUtterance object each time
+                    speechSynthesisUtterance = new SpeechSynthesisUtterance(answer.textContent);
+                    speechSynthesisUtterance.onend = function() {
+                // When speech finishes, reset the button state
+                        readAloudButton.innerText = 'Read Aloud';
+                        readAloudButton.classList.remove('stop-button');
+                        readAloudButton.classList.add('info-button');
+                    };
+            
+            // Speak the text
+                speechSynthesis.speak(speechSynthesisUtterance);
+            
+            // Update button text and style
+                readAloudButton.innerText = 'Stop Read Aloud';
+                readAloudButton.classList.remove('info-button');
+                readAloudButton.classList.add('stop-button');
+        }
+    }
+}
+
+        // Stop the read aloud speech
+        function stopReadAloud() {
+            if (speechSynthesisUtterance) {
+                speechSynthesis.cancel();  // Stop speaking
+            }
+            readAloudButton.innerText = 'Read Aloud';  // Reset the button text
+            readAloudButton.classList.remove('stop-button');
+            readAloudButton.classList.add('info-button');
+        }
+    </script>
+</body>
+</html>

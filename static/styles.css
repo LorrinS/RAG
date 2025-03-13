@@ -1,0 +1,126 @@
+/* General Page Styling */
+body {
+    background-color: #2c2c2c; /* Dark grey background */
+    font-family: "Consolas", "Courier New", monospace;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.chat-box {
+    height: 80%;  /* Larger height */
+    max-height: 100%;
+    width: 98%;
+    overflow-y: auto;
+    border-radius: 10px;
+    padding: 12px;
+    background-color: #282828;
+    border: 1px solid #444;
+    scrollbar-width: thin;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}  
+
+.chat-container {
+    width: 80%;
+    max-width: 100%;
+    height: 70%;
+    background-color: #1f1f1f; /* Darker grey for terminal look */
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Scrollbar */
+.chat-box::-webkit-scrollbar {
+    width: 8px;
+}
+.chat-box::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+}
+
+/* User Message */
+.user-message {
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #333;
+    display: flex;
+    align-items: center;
+}
+
+.question-label {
+    color: cyan; /* Blue label for user */
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.question-text {
+    color: white; /* White text for user input */
+}
+
+/* Bot Message */
+.bot-message {
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #3a3a3a;
+    display: flex;
+    align-items: center;
+}
+
+.answer-label {
+    color: #00ff00;    /* Purple label for bot */
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.answer-text {
+    color: white; /* White text for bot response */
+}
+
+/* Chat Form */
+#chat-form {
+    display: flex;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+/* Input Field */
+#user-input {
+    flex: 1;
+    padding: 10px;
+    background-color: #1a1a1a;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 8px;
+    outline: none;
+    font-size: 16px;
+}
+
+#user-input::placeholder {
+    color: #888;
+}
+
+/* Send Button */
+button {
+    padding: 10px 18px;
+    background-color: #555;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:focus {
+    outline: 2px solid cyan;
+}
+
+button:hover {
+    background-color: #666;
+}
